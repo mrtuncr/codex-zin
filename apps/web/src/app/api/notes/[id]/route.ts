@@ -13,6 +13,7 @@ export async function DELETE(request: Request, { params }: RouteParams) {
     return NextResponse.json({ error: "unauthorized", hint: `set ${adminHeaderName()} header` }, { status: 401 });
   }
 
+export async function DELETE(_request: Request, { params }: RouteParams) {
   const deleted = await deleteNote(params.id);
 
   if (!deleted) {

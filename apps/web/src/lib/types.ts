@@ -14,6 +14,9 @@ export interface Note {
   id: string;
   type: NoteType;
   modality: NoteModality;
+export interface Note {
+  id: string;
+  type: NoteType;
   content: string;
   rawInput: string;
   summary?: string;
