@@ -1,4 +1,5 @@
 import type { NoteModality, NoteType } from "./types";
+import type { NoteType } from "./types";
 
 export function shouldShortCircuit(text: string): boolean {
   return text.trim().split(/\s+/).filter(Boolean).length < 100;
@@ -7,6 +8,7 @@ export function shouldShortCircuit(text: string): boolean {
 export function classifyIntent(content: string, modality: NoteModality = "text"): NoteType {
   if (modality === "image") return "visual_note";
 
+export function classifyIntent(content: string): NoteType {
   const normalized = content.toLowerCase();
 
   if (normalized.includes("todo") || normalized.includes("task")) return "todo";

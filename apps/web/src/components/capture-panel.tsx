@@ -28,6 +28,12 @@ export function CapturePanel() {
   const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<"all" | NoteType>("all");
   const [selectedTag, setSelectedTag] = useState<string>("");
+export function CapturePanel() {
+  const [content, setContent] = useState("");
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<"all" | NoteType>("all");
   const [search, setSearch] = useState("");
   const [tagDrafts, setTagDrafts] = useState<Record<string, string>>({});
 
@@ -45,6 +51,10 @@ export function CapturePanel() {
     const data = (await response.json()) as { stats: NotesStats };
     setStats(data.stats);
   }
+    if (search.trim()) params.set("q", search.trim());
+    const query = params.toString();
+    return query ? `?${query}` : "";
+  }, [search, selectedType]);
 
   async function refreshNotes() {
     const response = await fetch(`/api/notes${queryString}`);
@@ -61,6 +71,9 @@ export function CapturePanel() {
     if (!tag) return;
 
     setError(null);
+    const tag = window.prompt("Yeni kullanıcı etiketi:");
+    if (!tag?.trim()) return;
+
     const response = await fetch(`/api/notes/${noteId}/tags`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -74,6 +87,7 @@ export function CapturePanel() {
 
     setTagDrafts((prev) => ({ ...prev, [noteId]: "" }));
     await refreshAll();
+    await refreshNotes();
   }
 
   async function removeNote(noteId: string) {
@@ -86,6 +100,7 @@ export function CapturePanel() {
     }
 
     await refreshAll();
+    await refreshNotes();
   }
 
   async function onSubmit(event: FormEvent) {
@@ -110,6 +125,7 @@ export function CapturePanel() {
 
       setContent("");
       await refreshAll();
+      await refreshNotes();
     } catch {
       setError("Not kaydedilirken bir hata oluştu.");
     } finally {
@@ -119,6 +135,7 @@ export function CapturePanel() {
 
   useEffect(() => {
     refreshAll();
+    refreshNotes();
   }, [queryString]);
 
   return (
@@ -231,6 +248,11 @@ export function CapturePanel() {
               Tag filtresini temizle: #{selectedTag}
             </button>
           )}
+            onClick={refreshNotes}
+            style={{ borderRadius: 8, border: "1px solid #3f3f46", background: "transparent", color: "inherit", padding: "0.45rem 0.8rem" }}
+          >
+            Notları Yenile
+          </button>
         </div>
 
         {notes.length === 0 && <p style={{ color: "#a1a1aa" }}>Henüz not yok. İlk notu ekle.</p>}
@@ -288,6 +310,28 @@ export function CapturePanel() {
                   Sil
                 </button>
               </div>
+              <button
+                onClick={() => addTag(note.id)}
+                style={{
+                  marginTop: "0.5rem",
+                  borderRadius: 8,
+                  border: "1px solid #3f3f46",
+                  background: "transparent",
+                  color: "inherit",
+                  padding: "0.3rem 0.6rem"
+                }}
+              >
+                Etiket Ekle
+              </button>
+            <li key={note.id} style={{ border: "1px solid #27272a", borderRadius: 12, padding: "0.9rem" }}>
+              <strong style={{ textTransform: "uppercase", fontSize: 12 }}>{note.type}</strong>
+              <p style={{ margin: "0.4rem 0" }}>{note.content}</p>
+              {note.summary && <small style={{ color: "#a1a1aa" }}>Özet: {note.summary}</small>}
+              {note.aiTags.length > 0 && (
+                <p style={{ margin: "0.35rem 0 0", color: "#c4b5fd", fontSize: 13 }}>
+                  Etiketler: {note.aiTags.join(", ")}
+                </p>
+              )}
             </li>
           ))}
         </ul>
