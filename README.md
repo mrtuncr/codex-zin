@@ -1,6 +1,7 @@
 # codex-zin
 
 ZIN için erken aşama monorepo başlangıcı.
+codex first try
 
 ## Documentation
 
