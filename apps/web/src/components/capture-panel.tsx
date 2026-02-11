@@ -20,6 +20,7 @@ export function CapturePanel() {
   const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<"all" | NoteType>("all");
   const [search, setSearch] = useState("");
+  const [tagDrafts, setTagDrafts] = useState<Record<string, string>>({});
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -36,6 +37,10 @@ export function CapturePanel() {
   }
 
   async function addTag(noteId: string) {
+    const tag = tagDrafts[noteId]?.trim();
+    if (!tag) return;
+
+    setError(null);
     const tag = window.prompt("Yeni kullanıcı etiketi:");
     if (!tag?.trim()) return;
 
@@ -47,6 +52,19 @@ export function CapturePanel() {
 
     if (!response.ok) {
       setError("Etiket eklenemedi.");
+      return;
+    }
+
+    setTagDrafts((prev) => ({ ...prev, [noteId]: "" }));
+    await refreshNotes();
+  }
+
+  async function removeNote(noteId: string) {
+    setError(null);
+    const response = await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
+
+    if (!response.ok) {
+      setError("Not silinemedi.");
       return;
     }
 
@@ -164,6 +182,8 @@ export function CapturePanel() {
           </button>
         </div>
 
+        {notes.length === 0 && <p style={{ color: "#a1a1aa" }}>Henüz not yok. İlk notu ekle.</p>}
+
         <ul style={{ listStyle: "none", padding: 0, marginTop: "1rem", display: "grid", gap: "0.8rem" }}>
           {notes.map((note) => (
             <li key={note.id} style={{ border: `1px solid ${note.uiFormat.accent ?? "#27272a"}`, borderRadius: 12, padding: "0.9rem" }}>
@@ -191,6 +211,32 @@ export function CapturePanel() {
                 </pre>
               )}
 
+              <div style={{ display: "flex", gap: "0.4rem", marginTop: "0.6rem", flexWrap: "wrap" }}>
+                <input
+                  value={tagDrafts[note.id] ?? ""}
+                  onChange={(event) => setTagDrafts((prev) => ({ ...prev, [note.id]: event.target.value }))}
+                  placeholder="etiket"
+                  style={{
+                    borderRadius: 8,
+                    border: "1px solid #3f3f46",
+                    background: "#111113",
+                    color: "inherit",
+                    padding: "0.3rem 0.5rem"
+                  }}
+                />
+                <button
+                  onClick={() => addTag(note.id)}
+                  style={{ borderRadius: 8, border: "1px solid #3f3f46", background: "transparent", color: "inherit", padding: "0.3rem 0.6rem" }}
+                >
+                  Etiket Ekle
+                </button>
+                <button
+                  onClick={() => removeNote(note.id)}
+                  style={{ borderRadius: 8, border: "1px solid #7f1d1d", background: "transparent", color: "#fca5a5", padding: "0.3rem 0.6rem" }}
+                >
+                  Sil
+                </button>
+              </div>
               <button
                 onClick={() => addTag(note.id)}
                 style={{

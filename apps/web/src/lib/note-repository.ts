@@ -100,3 +100,13 @@ export async function addUserTag(noteId: string, tag: string): Promise<Note | nu
 
   return note;
 }
+
+export async function deleteNote(noteId: string): Promise<boolean> {
+  const notes = await readNotes();
+  const nextNotes = notes.filter((note) => note.id !== noteId);
+
+  if (nextNotes.length === notes.length) return false;
+
+  await writeNotes(nextNotes);
+  return true;
+}
