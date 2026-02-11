@@ -15,6 +15,23 @@ function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
 
+function hydrateNote(note: Partial<Note>): Note {
+  return {
+    id: note.id ?? "",
+    type: note.type ?? "standard",
+    modality: note.modality ?? "text",
+    content: note.content ?? "",
+    rawInput: note.rawInput ?? note.content ?? "",
+    summary: note.summary,
+    aiTags: Array.isArray(note.aiTags) ? note.aiTags : [],
+    userTags: Array.isArray(note.userTags) ? note.userTags : [],
+    specialistData: note.specialistData ?? {},
+    uiFormat: note.uiFormat ?? {},
+    isProcessed: Boolean(note.isProcessed),
+    createdAt: note.createdAt ?? new Date().toISOString()
+  };
+}
+
 async function ensureDataFile() {
   await mkdir(dataDir, { recursive: true });
 
@@ -30,8 +47,8 @@ async function readNotes(): Promise<Note[]> {
   const raw = await readFile(notesFile, "utf8");
 
   try {
-    const parsed = JSON.parse(raw) as Note[];
-    return Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(raw) as Partial<Note>[];
+    return Array.isArray(parsed) ? parsed.map(hydrateNote) : [];
   } catch {
     return [];
   }

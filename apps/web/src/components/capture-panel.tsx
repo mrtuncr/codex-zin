@@ -166,8 +166,9 @@ export function CapturePanel() {
 
         <ul style={{ listStyle: "none", padding: 0, marginTop: "1rem", display: "grid", gap: "0.8rem" }}>
           {notes.map((note) => (
-            <li key={note.id} style={{ border: "1px solid #27272a", borderRadius: 12, padding: "0.9rem" }}>
+            <li key={note.id} style={{ border: `1px solid ${note.uiFormat.accent ?? "#27272a"}`, borderRadius: 12, padding: "0.9rem" }}>
               <strong style={{ textTransform: "uppercase", fontSize: 12 }}>{note.type}</strong>
+              <small style={{ display: "block", color: "#a1a1aa" }}>Modality: {note.modality}</small>
               <p style={{ margin: "0.4rem 0" }}>{note.content}</p>
 
               {note.summary && <small style={{ color: "#a1a1aa", display: "block" }}>Özet: {note.summary}</small>}
@@ -182,6 +183,12 @@ export function CapturePanel() {
                 <p style={{ margin: "0.3rem 0 0", color: "#86efac", fontSize: 13 }}>
                   Kullanıcı Etiketleri: {note.userTags.join(", ")}
                 </p>
+              )}
+
+              {Object.keys(note.specialistData).length > 0 && (
+                <pre style={{ margin: "0.5rem 0 0", color: "#d4d4d8", fontSize: 12, whiteSpace: "pre-wrap" }}>
+                  {JSON.stringify(note.specialistData, null, 2)}
+                </pre>
               )}
 
               <button

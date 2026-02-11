@@ -1,12 +1,19 @@
 import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
-import { classifyIntent, generateTags, shouldShortCircuit, summarize } from "../../../lib/orchestrator";
+import {
+  buildSpecialistData,
+  classifyIntent,
+  generateTags,
+  getUiFormat,
+  shouldShortCircuit,
+  summarize
+} from "../../../lib/orchestrator";
 import { createNote, listNotes } from "../../../lib/note-repository";
-import type { Note, NoteType } from "../../../lib/types";
+import type { Note, NoteModality, NoteType } from "../../../lib/types";
 
 interface CreateNotePayload {
   content: string;
-  modality?: "text" | "audio" | "image";
+  modality?: NoteModality;
 }
 
 export async function GET(request: Request) {
@@ -31,16 +38,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "content is required" }, { status: 400 });
   }
 
+  const modality = payload.modality ?? "text";
   const fastPath = shouldShortCircuit(payload.content);
+  const inferredType = classifyIntent(payload.content, modality);
 
   const note: Note = {
     id: randomUUID(),
+    modality,
     content: payload.content.trim(),
     rawInput: payload.content,
-    type: fastPath ? "standard" : classifyIntent(payload.content),
+    type: fastPath ? "standard" : inferredType,
     summary: fastPath ? undefined : summarize(payload.content),
     aiTags: fastPath ? [] : generateTags(payload.content),
     userTags: [],
+    specialistData: fastPath ? {} : buildSpecialistData(inferredType, payload.content),
+    uiFormat: getUiFormat(fastPath ? "standard" : inferredType),
     isProcessed: !fastPath,
     createdAt: new Date().toISOString()
   };

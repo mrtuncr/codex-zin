@@ -8,7 +8,7 @@ ZIN için erken aşama monorepo başlangıcı.
 
 ## Workspace
 
-- `apps/web`: Next.js 14 tabanlı web uygulaması (hızlı not yakalama + temel API, yerel JSON persistency, filtreleme ve kullanıcı etiketleri).
+- `apps/web`: Next.js 14 tabanlı web uygulaması (hızlı not yakalama + temel API, yerel JSON persistency, filtreleme, kullanıcı etiketleri ve type-temelli UI format ipuçları).
 - `packages/ai`: AI orchestrator için paylaşılabilir temel sınıflandırma iskeleti.
 - `packages/database`: PRD şemasını yansıtan temel TypeScript veri tipleri.
 
