@@ -119,6 +119,15 @@ export function CapturePanel() {
     await refreshAll();
   }
 
+  async function exportBackup() {
+    setError(null);
+    const response = await fetch("/api/notes/backup", {
+      headers: adminToken ? { "x-admin-token": adminToken } : undefined
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) setError("Yedek için admin token gerekli.");
+      else setError("Yedek alınamadı.");
 
   async function exportBackup() {
     setError(null);
@@ -130,6 +139,9 @@ export function CapturePanel() {
     }
 
     const data = (await response.json()) as { notes: Note[]; exportedAt: string };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {
+      type: "application/json"
+    });
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -175,6 +187,8 @@ export function CapturePanel() {
     });
 
     if (!response.ok) {
+      if (response.status === 401) setError("İçe aktarma için admin token gerekli.");
+      else setError("İçe aktarma başarısız.");
       setError("İçe aktarma başarısız.");
       return;
     }
@@ -217,6 +231,257 @@ export function CapturePanel() {
 
   useEffect(() => {
     refreshAll();
+  }, [queryString]);
+
+  return (
+    <section className="app-shell">
+      <header className="hero">
+        <h1>ZIN · Second Brain Workspace</h1>
+        <p>
+          Capture, organize and retrieve notes with low-friction workflows.
+        </p>
+      </header>
+
+      <div className="layout-grid">
+        <div className="card">
+          <div className="card-head">
+            <div>
+              <h2 className="card-title">Quick Capture</h2>
+              <p className="card-subtitle">Text girişleri anında işlenir.</p>
+            </div>
+          </div>
+
+          <div className="card-body">
+            <form className="capture-form" onSubmit={onSubmit}>
+              <textarea
+                className="textarea"
+                value={content}
+                onChange={(event) => setContent(event.target.value)}
+                placeholder="Aklındakini yaz..."
+                rows={7}
+              />
+
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? "Kaydediliyor..." : "Notu Kaydet"}
+              </button>
+
+              {error && <small className="error">{error}</small>}
+            </form>
+
+            <div className="controls-grid" style={{ marginTop: 14 }}>
+              <div className="controls-row">
+                <select
+                  className="select"
+                  value={selectedType}
+                  onChange={(event) =>
+                    setSelectedType(event.target.value as "all" | NoteType)
+                  }
+                >
+                  {intentOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  className="input"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Ara (anlam/kelime/tag)..."
+                />
+
+                <input
+                  className="input"
+                  type="date"
+                  value={fromDate}
+                  onChange={(event) => setFromDate(event.target.value)}
+                />
+
+                <input
+                  className="input"
+                  type="date"
+                  value={toDate}
+                  onChange={(event) => setToDate(event.target.value)}
+                />
+              </div>
+
+              <div className="controls-row">
+                <button className="btn" onClick={refreshAll}>
+                  Yenile
+                </button>
+
+                {selectedTag && (
+                  <button className="btn" onClick={() => setSelectedTag("")}>
+                    Tag filtresini temizle: #{selectedTag}
+                  </button>
+                )}
+
+                {(fromDate || toDate) && (
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      setFromDate("");
+                      setToDate("");
+                    }}
+                  >
+                    Tarih filtresini temizle
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-head">
+            <div>
+              <h2 className="card-title">Analytics & Backup</h2>
+              <p className="card-subtitle">Operasyonel görünürlük ve güvenli yedek.</p>
+            </div>
+          </div>
+
+          <div className="card-body">
+            {stats && (
+              <div className="stat-list">
+                <div>Toplam not: {stats.total}</div>
+                <div>AI işlenen not: {stats.processed}</div>
+                <div className="controls-row">
+                  {stats.topTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() =>
+                        setSelectedTag((prev) => (prev === tag ? "" : tag))
+                      }
+                      className={`btn btn-chip ${selectedTag === tag ? "active" : ""}`}
+                    >
+                      #{tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="backup-box" style={{ marginTop: 12 }}>
+              <strong>Yedekleme</strong>
+              <input
+                className="input"
+                value={adminToken}
+                onChange={(event) => setAdminToken(event.target.value)}
+                placeholder="Admin token (opsiyonel)"
+              />
+
+              <div className="controls-row">
+                <button className="btn" onClick={exportBackup}>
+                  JSON Dışa Aktar
+                </button>
+                <button className="btn" onClick={importBackup}>
+                  JSON İçe Aktar
+                </button>
+                <select
+                  className="select"
+                  value={importMode}
+                  onChange={(event) =>
+                    setImportMode(event.target.value as "replace" | "merge")
+                  }
+                >
+                  <option value="merge">Birleştir (ID çakışmalarını atla)</option>
+                  <option value="replace">Tamamen değiştir</option>
+                </select>
+              </div>
+
+              <textarea
+                className="textarea"
+                value={importPayload}
+                onChange={(event) => setImportPayload(event.target.value)}
+                placeholder='{"notes": [...]}'
+                rows={4}
+              />
+
+              {importPreviewCount !== null && (
+                <small className="muted">
+                  İçe aktarılacak not sayısı: {importPreviewCount}
+                </small>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="card-head">
+          <div>
+            <h2 className="card-title">Notes Stream</h2>
+            <p className="card-subtitle">Filtrelenmiş sonuçlar ve hızlı aksiyonlar.</p>
+          </div>
+        </div>
+
+        <div className="card-body">
+          {notes.length === 0 && (
+            <p className="muted">Henüz not yok. İlk notu ekle.</p>
+          )}
+
+          <ul className="note-list">
+            {notes.map((note) => (
+              <li
+                key={note.id}
+                className="note-item"
+                style={{ borderLeftColor: note.uiFormat.accent ?? "#27272a" }}
+              >
+                <div className="note-head">
+                  <span className="note-type">{note.type}</span>
+                  <span className="note-time">
+                    {new Date(note.createdAt).toLocaleString()}
+                  </span>
+                </div>
+
+                <small className="muted">Modality: {note.modality}</small>
+                <p className="note-content">{note.content}</p>
+
+                {note.summary && (
+                  <small className="note-summary">Özet: {note.summary}</small>
+                )}
+
+                <div className="note-tags">
+                  {note.aiTags.length > 0 && (
+                    <span className="ai">AI Etiketleri: {note.aiTags.join(", ")}</span>
+                  )}
+                  {note.userTags.length > 0 && (
+                    <span className="user">
+                      Kullanıcı Etiketleri: {note.userTags.join(", ")}
+                    </span>
+                  )}
+                </div>
+
+                {Object.keys(note.specialistData).length > 0 && (
+                  <pre className="muted" style={{ whiteSpace: "pre-wrap", margin: "8px 0 0" }}>
+                    {JSON.stringify(note.specialistData, null, 2)}
+                  </pre>
+                )}
+
+                <div className="note-actions">
+                  <input
+                    className="input inline-input"
+                    value={tagDrafts[note.id] ?? ""}
+                    onChange={(event) =>
+                      setTagDrafts((prev) => ({
+                        ...prev,
+                        [note.id]: event.target.value
+                      }))
+                    }
+                    placeholder="etiket"
+                  />
+                  <button className="btn" onClick={() => addTag(note.id)}>
+                    Etiket Ekle
+                  </button>
+                  <button className="btn btn-danger" onClick={() => removeNote(note.id)}>
+                    Sil
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
     refreshNotes();
   }, [queryString]);
 

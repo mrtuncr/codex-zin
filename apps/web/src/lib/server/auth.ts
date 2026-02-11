@@ -1,5 +1,9 @@
 const ADMIN_TOKEN_HEADER = "x-admin-token";
 
+export function isAdminProtectionEnabled(): boolean {
+  return Boolean(process.env.ADMIN_API_TOKEN);
+}
+
 export function isAdminAuthorized(request: Request): boolean {
   const expectedToken = process.env.ADMIN_API_TOKEN;
 

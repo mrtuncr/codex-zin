@@ -28,6 +28,7 @@ pnpm dev
 
 - Health check endpoint: `GET /api/health`
 - Readiness check endpoint: `GET /api/ready` (storage write/read probe)
+- Security headers + request tracing: middleware ile `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` ve `x-request-id`
 - Docker build:
 
 ```bash
@@ -36,6 +37,7 @@ docker run --rm -p 3000:3000 zin-web
 ```
 
 - Environment template: `.env.example`
+- Opsiyonel admin koruması: `ADMIN_API_TOKEN` set edilirse silme ve backup import/export endpointleri `x-admin-token` header ister
 - Opsiyonel admin koruması: `ADMIN_API_TOKEN` set edilirse silme ve backup import endpointleri `x-admin-token` header ister
 
 

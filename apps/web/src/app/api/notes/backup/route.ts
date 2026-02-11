@@ -1,4 +1,14 @@
 import { NextResponse } from "next/server";
+import {
+  exportNotes,
+  mergeNotes,
+  replaceAllNotes
+} from "../../../../lib/note-repository";
+import {
+  adminHeaderName,
+  isAdminAuthorized,
+  isAdminProtectionEnabled
+} from "../../../../lib/server/auth";
 import { exportNotes, mergeNotes, replaceAllNotes } from "../../../../lib/note-repository";
 import { adminHeaderName, isAdminAuthorized } from "../../../../lib/server/auth";
 import type { Note } from "../../../../lib/types";
@@ -8,6 +18,18 @@ interface ImportPayload {
 }
 
 const MAX_IMPORT_NOTES = 5000;
+
+export async function GET(request: Request) {
+  if (!isAdminAuthorized(request)) {
+    return NextResponse.json(
+      {
+        error: "unauthorized",
+        hint: `set ${adminHeaderName()} header`,
+        protectionEnabled: isAdminProtectionEnabled()
+      },
+      { status: 401 }
+    );
+  }
 
 export async function GET() {
   const notes = await exportNotes();
@@ -21,6 +43,8 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         error: "unauthorized",
+        hint: `set ${adminHeaderName()} header`,
+        protectionEnabled: isAdminProtectionEnabled()
         hint: `set ${adminHeaderName()} header`
       },
       { status: 401 }
