@@ -11,6 +11,13 @@ interface NoteQuery {
   q?: string;
 }
 
+export interface NotesStats {
+  total: number;
+  processed: number;
+  byType: Partial<Record<NoteType, number>>;
+  topTags: string[];
+}
+
 function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -77,6 +84,32 @@ export async function listNotes(query: NoteQuery = {}): Promise<Note[]> {
 
     return true;
   });
+}
+
+export async function getNotesStats(): Promise<NotesStats> {
+  const notes = await readNotes();
+  const byType: Partial<Record<NoteType, number>> = {};
+  const tagCounts = new Map<string, number>();
+
+  for (const note of notes) {
+    byType[note.type] = (byType[note.type] ?? 0) + 1;
+
+    for (const tag of [...note.aiTags, ...note.userTags]) {
+      tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+    }
+  }
+
+  const topTags = [...tagCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([tag]) => tag);
+
+  return {
+    total: notes.length,
+    processed: notes.filter((note) => note.isProcessed).length,
+    byType,
+    topTags
+  };
 }
 
 export async function createNote(note: Note): Promise<Note> {

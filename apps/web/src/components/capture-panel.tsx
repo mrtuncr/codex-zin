@@ -13,6 +13,21 @@ const intentOptions: Array<{ label: string; value: "all" | NoteType }> = [
   { label: "Quote", value: "quote" }
 ];
 
+interface NotesStats {
+  total: number;
+  processed: number;
+  byType: Partial<Record<NoteType, number>>;
+  topTags: string[];
+}
+
+export function CapturePanel() {
+  const [content, setContent] = useState("");
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [stats, setStats] = useState<NotesStats | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedType, setSelectedType] = useState<"all" | NoteType>("all");
+  const [selectedTag, setSelectedTag] = useState<string>("");
 export function CapturePanel() {
   const [content, setContent] = useState("");
   const [notes, setNotes] = useState<Note[]>([]);
@@ -25,6 +40,17 @@ export function CapturePanel() {
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
     if (selectedType !== "all") params.set("type", selectedType);
+    if (selectedTag) params.set("tag", selectedTag);
+    if (search.trim()) params.set("q", search.trim());
+    const query = params.toString();
+    return query ? `?${query}` : "";
+  }, [search, selectedTag, selectedType]);
+
+  async function refreshStats() {
+    const response = await fetch("/api/notes/stats");
+    const data = (await response.json()) as { stats: NotesStats };
+    setStats(data.stats);
+  }
     if (search.trim()) params.set("q", search.trim());
     const query = params.toString();
     return query ? `?${query}` : "";
@@ -34,6 +60,10 @@ export function CapturePanel() {
     const response = await fetch(`/api/notes${queryString}`);
     const data = (await response.json()) as { notes: Note[] };
     setNotes(data.notes);
+  }
+
+  async function refreshAll() {
+    await Promise.all([refreshNotes(), refreshStats()]);
   }
 
   async function addTag(noteId: string) {
@@ -56,6 +86,7 @@ export function CapturePanel() {
     }
 
     setTagDrafts((prev) => ({ ...prev, [noteId]: "" }));
+    await refreshAll();
     await refreshNotes();
   }
 
@@ -68,6 +99,7 @@ export function CapturePanel() {
       return;
     }
 
+    await refreshAll();
     await refreshNotes();
   }
 
@@ -92,6 +124,7 @@ export function CapturePanel() {
       if (!response.ok) throw new Error("Not kaydedilemedi");
 
       setContent("");
+      await refreshAll();
       await refreshNotes();
     } catch {
       setError("Not kaydedilirken bir hata oluştu.");
@@ -101,6 +134,7 @@ export function CapturePanel() {
   }
 
   useEffect(() => {
+    refreshAll();
     refreshNotes();
   }, [queryString]);
 
@@ -110,6 +144,31 @@ export function CapturePanel() {
       <p style={{ color: "#a1a1aa" }}>
         Hızlı metin yakalama + 100 kelime üstü içeriklerde basit AI sınıflandırma iskeleti.
       </p>
+
+      {stats && (
+        <div style={{ display: "grid", gap: "0.35rem", margin: "0.8rem 0", color: "#d4d4d8", fontSize: 14 }}>
+          <div>Toplam not: {stats.total}</div>
+          <div>AI işlenen not: {stats.processed}</div>
+          <div style={{ display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
+            {stats.topTags.map((tag) => (
+              <button
+                key={tag}
+                onClick={() => setSelectedTag((prev) => (prev === tag ? "" : tag))}
+                style={{
+                  borderRadius: 999,
+                  border: `1px solid ${selectedTag === tag ? "#a78bfa" : "#3f3f46"}`,
+                  background: "transparent",
+                  color: selectedTag === tag ? "#c4b5fd" : "#d4d4d8",
+                  padding: "0.2rem 0.55rem",
+                  cursor: "pointer"
+                }}
+              >
+                #{tag}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <form onSubmit={onSubmit} style={{ display: "grid", gap: "0.75rem" }}>
         <textarea
@@ -175,6 +234,20 @@ export function CapturePanel() {
           />
 
           <button
+            onClick={refreshAll}
+            style={{ borderRadius: 8, border: "1px solid #3f3f46", background: "transparent", color: "inherit", padding: "0.45rem 0.8rem" }}
+          >
+            Yenile
+          </button>
+
+          {selectedTag && (
+            <button
+              onClick={() => setSelectedTag("")}
+              style={{ borderRadius: 8, border: "1px solid #a78bfa", background: "transparent", color: "#c4b5fd", padding: "0.45rem 0.8rem" }}
+            >
+              Tag filtresini temizle: #{selectedTag}
+            </button>
+          )}
             onClick={refreshNotes}
             style={{ borderRadius: 8, border: "1px solid #3f3f46", background: "transparent", color: "inherit", padding: "0.45rem 0.8rem" }}
           >

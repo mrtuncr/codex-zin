@@ -9,6 +9,7 @@ codex first try
 
 ## Workspace
 
+- `apps/web`: Next.js 14 tabanlı web uygulaması (hızlı not yakalama + temel API, yerel JSON persistency, filtreleme, kullanıcı etiketleri ve type-temelli UI format ipuçları, inline etiket ekleme, not silme ve not istatistik kartları).
 - `apps/web`: Next.js 14 tabanlı web uygulaması (hızlı not yakalama + temel API, yerel JSON persistency, filtreleme, kullanıcı etiketleri ve type-temelli UI format ipuçları, inline etiket ekleme ve not silme).
 - `apps/web`: Next.js 14 tabanlı web uygulaması (hızlı not yakalama + temel API, yerel JSON persistency, filtreleme, kullanıcı etiketleri ve type-temelli UI format ipuçları).
 - `apps/web`: Next.js 14 tabanlı web uygulaması (hızlı not yakalama + temel API).
