@@ -9,6 +9,7 @@ codex first try
 
 ## Workspace
 
+- `apps/web`: Next.js 14 tabanlı web uygulaması (hızlı not yakalama + temel API, yerel JSON persistency, filtreleme, kullanıcı etiketleri ve type-temelli UI format ipuçları, inline etiket ekleme, not silme ve not istatistik kartları ve tarih aralığı filtreleme ve JSON yedek içe/dışa aktarma (birleştir/değiştir modları)).
 - `apps/web`: Next.js 14 tabanlı web uygulaması (hızlı not yakalama + temel API, yerel JSON persistency, filtreleme, kullanıcı etiketleri ve type-temelli UI format ipuçları, inline etiket ekleme, not silme ve not istatistik kartları).
 - `apps/web`: Next.js 14 tabanlı web uygulaması (hızlı not yakalama + temel API, yerel JSON persistency, filtreleme, kullanıcı etiketleri ve type-temelli UI format ipuçları, inline etiket ekleme ve not silme).
 - `apps/web`: Next.js 14 tabanlı web uygulaması (hızlı not yakalama + temel API, yerel JSON persistency, filtreleme, kullanıcı etiketleri ve type-temelli UI format ipuçları).
@@ -22,3 +23,22 @@ codex first try
 pnpm install
 pnpm dev
 ```
+
+## Production notes
+
+- Health check endpoint: `GET /api/health`
+- Readiness check endpoint: `GET /api/ready` (storage write/read probe)
+- Docker build:
+
+```bash
+docker build -t zin-web .
+docker run --rm -p 3000:3000 zin-web
+```
+
+- Environment template: `.env.example`
+- Opsiyonel admin koruması: `ADMIN_API_TOKEN` set edilirse silme ve backup import endpointleri `x-admin-token` header ister
+
+
+## CI
+
+- GitHub Actions workflow: `.github/workflows/ci.yml` (install, typecheck, build)

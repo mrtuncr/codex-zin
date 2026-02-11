@@ -28,6 +28,14 @@ export function CapturePanel() {
   const [error, setError] = useState<string | null>(null);
   const [selectedType, setSelectedType] = useState<"all" | NoteType>("all");
   const [selectedTag, setSelectedTag] = useState<string>("");
+  const [search, setSearch] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [tagDrafts, setTagDrafts] = useState<Record<string, string>>({});
+  const [importPayload, setImportPayload] = useState("");
+  const [importMode, setImportMode] = useState<"replace" | "merge">("merge");
+  const [importPreviewCount, setImportPreviewCount] = useState<number | null>(null);
+  const [adminToken, setAdminToken] = useState("");
 export function CapturePanel() {
   const [content, setContent] = useState("");
   const [notes, setNotes] = useState<Note[]>([]);
@@ -42,6 +50,11 @@ export function CapturePanel() {
     if (selectedType !== "all") params.set("type", selectedType);
     if (selectedTag) params.set("tag", selectedTag);
     if (search.trim()) params.set("q", search.trim());
+    if (fromDate) params.set("from", fromDate);
+    if (toDate) params.set("to", toDate);
+    const query = params.toString();
+    return query ? `?${query}` : "";
+  }, [fromDate, search, selectedTag, selectedType, toDate]);
     const query = params.toString();
     return query ? `?${query}` : "";
   }, [search, selectedTag, selectedType]);
@@ -92,6 +105,10 @@ export function CapturePanel() {
 
   async function removeNote(noteId: string) {
     setError(null);
+    const response = await fetch(`/api/notes/${noteId}`, {
+      method: "DELETE",
+      headers: adminToken ? { "x-admin-token": adminToken } : undefined
+    });
     const response = await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
 
     if (!response.ok) {
@@ -99,6 +116,71 @@ export function CapturePanel() {
       return;
     }
 
+    await refreshAll();
+  }
+
+
+  async function exportBackup() {
+    setError(null);
+    const response = await fetch("/api/notes/backup");
+
+    if (!response.ok) {
+      setError("Yedek alınamadı.");
+      return;
+    }
+
+    const data = (await response.json()) as { notes: Note[]; exportedAt: string };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `zin-backup-${data.exportedAt.replace(/[:.]/g, "-")}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importBackup() {
+    setError(null);
+
+    if (!importPayload.trim()) {
+      setError("İçe aktarma için JSON gir.");
+      return;
+    }
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(importPayload);
+    } catch {
+      setError("Geçersiz JSON.");
+      return;
+    }
+
+    const notesCount = Array.isArray((parsed as { notes?: unknown }).notes)
+      ? (parsed as { notes: unknown[] }).notes.length
+      : null;
+    setImportPreviewCount(notesCount);
+
+    if (notesCount === null) {
+      setError("JSON içinde notes dizisi olmalı.");
+      return;
+    }
+
+    const response = await fetch(`/api/notes/backup?mode=${importMode}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(adminToken ? { "x-admin-token": adminToken } : {})
+      },
+      body: JSON.stringify(parsed)
+    });
+
+    if (!response.ok) {
+      setError("İçe aktarma başarısız.");
+      return;
+    }
+
+    setImportPayload("");
+    setImportPreviewCount(null);
     await refreshAll();
     await refreshNotes();
   }
@@ -233,6 +315,33 @@ export function CapturePanel() {
             }}
           />
 
+
+          <input
+            type="date"
+            value={fromDate}
+            onChange={(event) => setFromDate(event.target.value)}
+            style={{
+              borderRadius: 8,
+              border: "1px solid #3f3f46",
+              background: "#111113",
+              color: "inherit",
+              padding: "0.45rem 0.6rem"
+            }}
+          />
+
+          <input
+            type="date"
+            value={toDate}
+            onChange={(event) => setToDate(event.target.value)}
+            style={{
+              borderRadius: 8,
+              border: "1px solid #3f3f46",
+              background: "#111113",
+              color: "inherit",
+              padding: "0.45rem 0.6rem"
+            }}
+          />
+
           <button
             onClick={refreshAll}
             style={{ borderRadius: 8, border: "1px solid #3f3f46", background: "transparent", color: "inherit", padding: "0.45rem 0.8rem" }}
@@ -248,6 +357,18 @@ export function CapturePanel() {
               Tag filtresini temizle: #{selectedTag}
             </button>
           )}
+
+          {(fromDate || toDate) && (
+            <button
+              onClick={() => {
+                setFromDate("");
+                setToDate("");
+              }}
+              style={{ borderRadius: 8, border: "1px solid #52525b", background: "transparent", color: "#d4d4d8", padding: "0.45rem 0.8rem" }}
+            >
+              Tarih filtresini temizle
+            </button>
+          )}
             onClick={refreshNotes}
             style={{ borderRadius: 8, border: "1px solid #3f3f46", background: "transparent", color: "inherit", padding: "0.45rem 0.8rem" }}
           >
@@ -257,11 +378,69 @@ export function CapturePanel() {
 
         {notes.length === 0 && <p style={{ color: "#a1a1aa" }}>Henüz not yok. İlk notu ekle.</p>}
 
+
+        <div style={{ border: "1px solid #27272a", borderRadius: 10, padding: "0.75rem", display: "grid", gap: "0.5rem" }}>
+          <strong style={{ fontSize: 13 }}>Yedekleme</strong>
+          <input
+            value={adminToken}
+            onChange={(event) => setAdminToken(event.target.value)}
+            placeholder="Admin token (opsiyonel)"
+            style={{
+              borderRadius: 8,
+              border: "1px solid #3f3f46",
+              background: "#111113",
+              color: "inherit",
+              padding: "0.4rem 0.55rem"
+            }}
+          />
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <button
+              onClick={exportBackup}
+              style={{ borderRadius: 8, border: "1px solid #3f3f46", background: "transparent", color: "inherit", padding: "0.4rem 0.75rem" }}
+            >
+              JSON Dışa Aktar
+            </button>
+            <button
+              onClick={importBackup}
+              style={{ borderRadius: 8, border: "1px solid #3f3f46", background: "transparent", color: "inherit", padding: "0.4rem 0.75rem" }}
+            >
+              JSON İçe Aktar
+            </button>
+
+            <select
+              value={importMode}
+              onChange={(event) => setImportMode(event.target.value as "replace" | "merge")}
+              style={{ borderRadius: 8, border: "1px solid #3f3f46", background: "#111113", color: "inherit", padding: "0.4rem 0.55rem" }}
+            >
+              <option value="merge">Birleştir (ID çakışmalarını atla)</option>
+              <option value="replace">Tamamen değiştir</option>
+            </select>
+          </div>
+          <textarea
+            value={importPayload}
+            onChange={(event) => setImportPayload(event.target.value)}
+            placeholder='{"notes": [...]}'
+            rows={4}
+            style={{
+              width: "100%",
+              borderRadius: 8,
+              border: "1px solid #3f3f46",
+              background: "#111113",
+              color: "inherit",
+              padding: "0.45rem"
+            }}
+          />
+          {importPreviewCount !== null && (
+            <small style={{ color: "#a1a1aa" }}>İçe aktarılacak not sayısı: {importPreviewCount}</small>
+          )}
+        </div>
+
         <ul style={{ listStyle: "none", padding: 0, marginTop: "1rem", display: "grid", gap: "0.8rem" }}>
           {notes.map((note) => (
             <li key={note.id} style={{ border: `1px solid ${note.uiFormat.accent ?? "#27272a"}`, borderRadius: 12, padding: "0.9rem" }}>
               <strong style={{ textTransform: "uppercase", fontSize: 12 }}>{note.type}</strong>
               <small style={{ display: "block", color: "#a1a1aa" }}>Modality: {note.modality}</small>
+              <small style={{ display: "block", color: "#71717a" }}>{new Date(note.createdAt).toLocaleString()}</small>
               <p style={{ margin: "0.4rem 0" }}>{note.content}</p>
 
               {note.summary && <small style={{ color: "#a1a1aa", display: "block" }}>Özet: {note.summary}</small>}

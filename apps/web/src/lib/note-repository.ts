@@ -9,6 +9,8 @@ interface NoteQuery {
   type?: NoteType;
   tag?: string;
   q?: string;
+  from?: string;
+  to?: string;
 }
 
 export interface NotesStats {
@@ -20,6 +22,19 @@ export interface NotesStats {
 
 function normalize(value: string): string {
   return value.trim().toLowerCase();
+}
+
+
+function parseDateStart(value: string): Date | null {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function parseDateEndExclusive(value: string): Date | null {
+  const date = new Date(`${value}T00:00:00.000Z`);
+  if (Number.isNaN(date.getTime())) return null;
+  date.setUTCDate(date.getUTCDate() + 1);
+  return date;
 }
 
 function hydrateNote(note: Partial<Note>): Note {
@@ -82,6 +97,22 @@ export async function listNotes(query: NoteQuery = {}): Promise<Note[]> {
       if (!haystack.includes(needle)) return false;
     }
 
+    if (query.from) {
+      const fromDate = parseDateStart(query.from);
+      if (fromDate) {
+        const created = new Date(note.createdAt);
+        if (created < fromDate) return false;
+      }
+    }
+
+    if (query.to) {
+      const toDateExclusive = parseDateEndExclusive(query.to);
+      if (toDateExclusive) {
+        const created = new Date(note.createdAt);
+        if (created >= toDateExclusive) return false;
+      }
+    }
+
     return true;
   });
 }
@@ -142,4 +173,24 @@ export async function deleteNote(noteId: string): Promise<boolean> {
 
   await writeNotes(nextNotes);
   return true;
+}
+
+
+export async function replaceAllNotes(notes: Note[]): Promise<number> {
+  const hydrated = notes.map(hydrateNote);
+  await writeNotes(hydrated);
+  return hydrated.length;
+}
+
+export async function exportNotes(): Promise<Note[]> {
+  return readNotes();
+}
+
+export async function mergeNotes(notes: Note[]): Promise<number> {
+  const current = await readNotes();
+  const imported = notes.map(hydrateNote);
+  const existingIds = new Set(current.map((note) => note.id));
+  const uniqueImported = imported.filter((note) => note.id && !existingIds.has(note.id));
+  await writeNotes([...uniqueImported, ...current]);
+  return uniqueImported.length;
 }

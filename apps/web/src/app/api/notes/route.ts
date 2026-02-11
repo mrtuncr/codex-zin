@@ -32,10 +32,18 @@ export async function GET(request: Request) {
   const type = searchParams.get("type") as NoteType | null;
   const tag = searchParams.get("tag");
   const q = searchParams.get("q");
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
 
   const notes = await listNotes({
     type: type ?? undefined,
     tag: tag ?? undefined,
+    q: q ?? undefined,
+    from: from ?? undefined,
+    to: to ?? undefined
+  });
+
+  return NextResponse.json({ notes });
     q: q ?? undefined
   });
 
