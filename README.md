@@ -18,3 +18,15 @@ ZIN için erken aşama monorepo başlangıcı.
 pnpm install
 pnpm dev
 ```
+
+## Production notes
+
+- Health check endpoint: `GET /api/health`
+- Docker build:
+
+```bash
+docker build -t zin-web .
+docker run --rm -p 3000:3000 zin-web
+```
+
+- Environment template: `.env.example`
