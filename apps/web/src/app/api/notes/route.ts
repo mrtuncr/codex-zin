@@ -2,15 +2,37 @@ import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 import { classifyIntent, generateTags, shouldShortCircuit, summarize } from "../../../lib/orchestrator";
 import { notesStore } from "../../../lib/store";
-import type { Note } from "../../../lib/types";
+import type { Note, NoteType } from "../../../lib/types";
 
 interface CreateNotePayload {
   content: string;
   modality?: "text" | "audio" | "image";
 }
 
-export async function GET() {
-  return NextResponse.json({ notes: notesStore });
+function normalize(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const type = searchParams.get("type") as NoteType | null;
+  const tag = searchParams.get("tag");
+  const q = searchParams.get("q");
+
+  const filtered = notesStore.filter((note) => {
+    if (type && note.type !== type) return false;
+    if (tag && !note.aiTags.includes(normalize(tag))) return false;
+
+    if (q) {
+      const query = normalize(q);
+      const haystack = `${note.content} ${note.summary ?? ""} ${note.aiTags.join(" ")}`.toLowerCase();
+      if (!haystack.includes(query)) return false;
+    }
+
+    return true;
+  });
+
+  return NextResponse.json({ notes: filtered });
 }
 
 export async function POST(request: Request) {
