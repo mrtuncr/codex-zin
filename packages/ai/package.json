@@ -1,0 +1,10 @@
+{
+  "name": "@zin/ai",
+  "private": true,
+  "version": "0.0.1",
+  "main": "src/orchestrator.ts",
+  "types": "src/orchestrator.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}
