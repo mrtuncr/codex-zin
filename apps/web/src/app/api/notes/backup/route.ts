@@ -9,6 +9,8 @@ import {
   isAdminAuthorized,
   isAdminProtectionEnabled
 } from "../../../../lib/server/auth";
+import { exportNotes, mergeNotes, replaceAllNotes } from "../../../../lib/note-repository";
+import { adminHeaderName, isAdminAuthorized } from "../../../../lib/server/auth";
 import type { Note } from "../../../../lib/types";
 
 interface ImportPayload {
@@ -29,6 +31,7 @@ export async function GET(request: Request) {
     );
   }
 
+export async function GET() {
   const notes = await exportNotes();
   return NextResponse.json({ notes, exportedAt: new Date().toISOString() });
 }
@@ -42,6 +45,7 @@ export async function POST(request: Request) {
         error: "unauthorized",
         hint: `set ${adminHeaderName()} header`,
         protectionEnabled: isAdminProtectionEnabled()
+        hint: `set ${adminHeaderName()} header`
       },
       { status: 401 }
     );
