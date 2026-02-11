@@ -35,6 +35,24 @@ export function CapturePanel() {
     setNotes(data.notes);
   }
 
+  async function addTag(noteId: string) {
+    const tag = window.prompt("Yeni kullanıcı etiketi:");
+    if (!tag?.trim()) return;
+
+    const response = await fetch(`/api/notes/${noteId}/tags`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tag })
+    });
+
+    if (!response.ok) {
+      setError("Etiket eklenemedi.");
+      return;
+    }
+
+    await refreshNotes();
+  }
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
@@ -148,6 +166,44 @@ export function CapturePanel() {
 
         <ul style={{ listStyle: "none", padding: 0, marginTop: "1rem", display: "grid", gap: "0.8rem" }}>
           {notes.map((note) => (
+            <li key={note.id} style={{ border: `1px solid ${note.uiFormat.accent ?? "#27272a"}`, borderRadius: 12, padding: "0.9rem" }}>
+              <strong style={{ textTransform: "uppercase", fontSize: 12 }}>{note.type}</strong>
+              <small style={{ display: "block", color: "#a1a1aa" }}>Modality: {note.modality}</small>
+              <p style={{ margin: "0.4rem 0" }}>{note.content}</p>
+
+              {note.summary && <small style={{ color: "#a1a1aa", display: "block" }}>Özet: {note.summary}</small>}
+
+              {note.aiTags.length > 0 && (
+                <p style={{ margin: "0.35rem 0 0", color: "#c4b5fd", fontSize: 13 }}>
+                  AI Etiketleri: {note.aiTags.join(", ")}
+                </p>
+              )}
+
+              {note.userTags.length > 0 && (
+                <p style={{ margin: "0.3rem 0 0", color: "#86efac", fontSize: 13 }}>
+                  Kullanıcı Etiketleri: {note.userTags.join(", ")}
+                </p>
+              )}
+
+              {Object.keys(note.specialistData).length > 0 && (
+                <pre style={{ margin: "0.5rem 0 0", color: "#d4d4d8", fontSize: 12, whiteSpace: "pre-wrap" }}>
+                  {JSON.stringify(note.specialistData, null, 2)}
+                </pre>
+              )}
+
+              <button
+                onClick={() => addTag(note.id)}
+                style={{
+                  marginTop: "0.5rem",
+                  borderRadius: 8,
+                  border: "1px solid #3f3f46",
+                  background: "transparent",
+                  color: "inherit",
+                  padding: "0.3rem 0.6rem"
+                }}
+              >
+                Etiket Ekle
+              </button>
             <li key={note.id} style={{ border: "1px solid #27272a", borderRadius: 12, padding: "0.9rem" }}>
               <strong style={{ textTransform: "uppercase", fontSize: 12 }}>{note.type}</strong>
               <p style={{ margin: "0.4rem 0" }}>{note.content}</p>
