@@ -204,6 +204,15 @@ export function CapturePanel() {
               >
                 Etiket Ekle
               </button>
+            <li key={note.id} style={{ border: "1px solid #27272a", borderRadius: 12, padding: "0.9rem" }}>
+              <strong style={{ textTransform: "uppercase", fontSize: 12 }}>{note.type}</strong>
+              <p style={{ margin: "0.4rem 0" }}>{note.content}</p>
+              {note.summary && <small style={{ color: "#a1a1aa" }}>Özet: {note.summary}</small>}
+              {note.aiTags.length > 0 && (
+                <p style={{ margin: "0.35rem 0 0", color: "#c4b5fd", fontSize: 13 }}>
+                  Etiketler: {note.aiTags.join(", ")}
+                </p>
+              )}
             </li>
           ))}
         </ul>
