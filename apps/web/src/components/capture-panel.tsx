@@ -33,6 +33,8 @@ export function CapturePanel() {
   const [toDate, setToDate] = useState("");
   const [tagDrafts, setTagDrafts] = useState<Record<string, string>>({});
   const [importPayload, setImportPayload] = useState("");
+  const [importMode, setImportMode] = useState<"replace" | "merge">("merge");
+  const [importPreviewCount, setImportPreviewCount] = useState<number | null>(null);
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -129,7 +131,17 @@ export function CapturePanel() {
       return;
     }
 
-    const response = await fetch("/api/notes/backup", {
+    const notesCount = Array.isArray((parsed as { notes?: unknown }).notes)
+      ? (parsed as { notes: unknown[] }).notes.length
+      : null;
+    setImportPreviewCount(notesCount);
+
+    if (notesCount === null) {
+      setError("JSON içinde notes dizisi olmalı.");
+      return;
+    }
+
+    const response = await fetch(`/api/notes/backup?mode=${importMode}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(parsed)
@@ -141,6 +153,7 @@ export function CapturePanel() {
     }
 
     setImportPayload("");
+    setImportPreviewCount(null);
     await refreshAll();
   }
 
@@ -346,6 +359,15 @@ export function CapturePanel() {
             >
               JSON İçe Aktar
             </button>
+
+            <select
+              value={importMode}
+              onChange={(event) => setImportMode(event.target.value as "replace" | "merge")}
+              style={{ borderRadius: 8, border: "1px solid #3f3f46", background: "#111113", color: "inherit", padding: "0.4rem 0.55rem" }}
+            >
+              <option value="merge">Birleştir (ID çakışmalarını atla)</option>
+              <option value="replace">Tamamen değiştir</option>
+            </select>
           </div>
           <textarea
             value={importPayload}
@@ -361,6 +383,9 @@ export function CapturePanel() {
               padding: "0.45rem"
             }}
           />
+          {importPreviewCount !== null && (
+            <small style={{ color: "#a1a1aa" }}>İçe aktarılacak not sayısı: {importPreviewCount}</small>
+          )}
         </div>
 
         <ul style={{ listStyle: "none", padding: 0, marginTop: "1rem", display: "grid", gap: "0.8rem" }}>

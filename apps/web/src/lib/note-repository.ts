@@ -185,3 +185,12 @@ export async function replaceAllNotes(notes: Note[]): Promise<number> {
 export async function exportNotes(): Promise<Note[]> {
   return readNotes();
 }
+
+export async function mergeNotes(notes: Note[]): Promise<number> {
+  const current = await readNotes();
+  const imported = notes.map(hydrateNote);
+  const existingIds = new Set(current.map((note) => note.id));
+  const uniqueImported = imported.filter((note) => note.id && !existingIds.has(note.id));
+  await writeNotes([...uniqueImported, ...current]);
+  return uniqueImported.length;
+}

@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { exportNotes, replaceAllNotes } from "../../../../lib/note-repository";
+import { exportNotes, mergeNotes, replaceAllNotes } from "../../../../lib/note-repository";
 import type { Note } from "../../../../lib/types";
 
 interface ImportPayload {
   notes: Note[];
 }
+
+const MAX_IMPORT_NOTES = 5000;
 
 export async function GET() {
   const notes = await exportNotes();
@@ -12,12 +14,25 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const mode = searchParams.get("mode") === "merge" ? "merge" : "replace";
   const payload = (await request.json()) as ImportPayload;
 
   if (!Array.isArray(payload.notes)) {
     return NextResponse.json({ error: "notes array is required" }, { status: 400 });
   }
 
-  const count = await replaceAllNotes(payload.notes);
-  return NextResponse.json({ ok: true, count });
+  if (payload.notes.length > MAX_IMPORT_NOTES) {
+    return NextResponse.json(
+      { error: `import limit exceeded (${MAX_IMPORT_NOTES})` },
+      { status: 400 }
+    );
+  }
+
+  const count =
+    mode === "merge"
+      ? await mergeNotes(payload.notes)
+      : await replaceAllNotes(payload.notes);
+
+  return NextResponse.json({ ok: true, count, mode });
 }
