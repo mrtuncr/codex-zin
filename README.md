@@ -31,6 +31,7 @@ docker run --rm -p 3000:3000 zin-web
 ```
 
 - Environment template: `.env.example`
+- Opsiyonel admin koruması: `ADMIN_API_TOKEN` set edilirse silme ve backup import endpointleri `x-admin-token` header ister
 
 
 ## CI

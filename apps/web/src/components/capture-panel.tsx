@@ -35,6 +35,7 @@ export function CapturePanel() {
   const [importPayload, setImportPayload] = useState("");
   const [importMode, setImportMode] = useState<"replace" | "merge">("merge");
   const [importPreviewCount, setImportPreviewCount] = useState<number | null>(null);
+  const [adminToken, setAdminToken] = useState("");
 
   const queryString = useMemo(() => {
     const params = new URLSearchParams();
@@ -85,7 +86,10 @@ export function CapturePanel() {
 
   async function removeNote(noteId: string) {
     setError(null);
-    const response = await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
+    const response = await fetch(`/api/notes/${noteId}`, {
+      method: "DELETE",
+      headers: adminToken ? { "x-admin-token": adminToken } : undefined
+    });
 
     if (!response.ok) {
       setError("Not silinemedi.");
@@ -143,7 +147,10 @@ export function CapturePanel() {
 
     const response = await fetch(`/api/notes/backup?mode=${importMode}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(adminToken ? { "x-admin-token": adminToken } : {})
+      },
       body: JSON.stringify(parsed)
     });
 
@@ -346,6 +353,18 @@ export function CapturePanel() {
 
         <div style={{ border: "1px solid #27272a", borderRadius: 10, padding: "0.75rem", display: "grid", gap: "0.5rem" }}>
           <strong style={{ fontSize: 13 }}>Yedekleme</strong>
+          <input
+            value={adminToken}
+            onChange={(event) => setAdminToken(event.target.value)}
+            placeholder="Admin token (opsiyonel)"
+            style={{
+              borderRadius: 8,
+              border: "1px solid #3f3f46",
+              background: "#111113",
+              color: "inherit",
+              padding: "0.4rem 0.55rem"
+            }}
+          />
           <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
             <button
               onClick={exportBackup}

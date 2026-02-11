@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { exportNotes, mergeNotes, replaceAllNotes } from "../../../../lib/note-repository";
+import { adminHeaderName, isAdminAuthorized } from "../../../../lib/server/auth";
 import type { Note } from "../../../../lib/types";
 
 interface ImportPayload {
@@ -15,6 +16,17 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const { searchParams } = new URL(request.url);
+
+  if (!isAdminAuthorized(request)) {
+    return NextResponse.json(
+      {
+        error: "unauthorized",
+        hint: `set ${adminHeaderName()} header`
+      },
+      { status: 401 }
+    );
+  }
+
   const mode = searchParams.get("mode") === "merge" ? "merge" : "replace";
   const payload = (await request.json()) as ImportPayload;
 
