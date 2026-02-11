@@ -22,6 +22,7 @@ pnpm dev
 ## Production notes
 
 - Health check endpoint: `GET /api/health`
+- Readiness check endpoint: `GET /api/ready` (storage write/read probe)
 - Docker build:
 
 ```bash
@@ -30,3 +31,8 @@ docker run --rm -p 3000:3000 zin-web
 ```
 
 - Environment template: `.env.example`
+
+
+## CI
+
+- GitHub Actions workflow: `.github/workflows/ci.yml` (install, typecheck, build)
